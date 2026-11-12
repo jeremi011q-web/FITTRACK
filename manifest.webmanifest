@@ -1,13 +1,13 @@
 
 {
-  "name": "FITTRACK PRO 3.0 – Personal Performance",
+  "name": "FITTRACK PRO 3.0 BLUE – Personal Performance",
   "short_name": "FITTRACK",
   "description": "Seguimiento de entrenamiento, recuperación y nutrición para Jere y Nicole.",
-  "start_url": "./FITTRACK-PRO-3.1-PERFORMANCE.html",
+  "start_url": "./FITTRACK-PRO-3.0-BLUE.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0c1015",
-  "theme_color": "#0c1015",
+  "background_color": "#07111d",
+  "theme_color": "#07111d",
   "icons": [
     {
       "src": "icon-192.png",
