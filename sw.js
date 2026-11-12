@@ -1,8 +1,8 @@
 
-const CACHE = 'fittrack-pro-3-1-v2';
+const CACHE = 'fittrack-pro-3-blue-v1';
 
 const FILES = [
-  './FITTRACK-PRO-3.1-PERFORMANCE.html',
+  './FITTRACK-PRO-3.0-BLUE.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
@@ -37,23 +37,18 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(request.url);
 
-  // No interceptar peticiones a Supabase ni a otros dominios.
   if (url.origin !== self.location.origin) return;
 
-  // Para páginas HTML, intentar siempre obtener la versión actual.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then(response => response)
-        .catch(async () => {
-          const cache = await caches.open(CACHE);
-          return await cache.match('./FITTRACK-PRO-3.1-PERFORMANCE.html');
-        })
+      fetch(request).catch(async () => {
+        const cache = await caches.open(CACHE);
+        return await cache.match('./FITTRACK-PRO-3.0-BLUE.html');
+      })
     );
     return;
   }
 
-  // Para archivos locales, usar la red y guardar respuestas válidas.
   event.respondWith(
     fetch(request)
       .then(response => {
