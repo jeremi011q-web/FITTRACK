@@ -1,6 +1,6 @@
 
 {
-  "name": "FITTRACK PRO 3.1 – Personal Performance",
+  "name": "FITTRACK PRO 3.0 – Personal Performance",
   "short_name": "FITTRACK",
   "description": "Seguimiento de entrenamiento, recuperación y nutrición para Jere y Nicole.",
   "start_url": "./FITTRACK-PRO-3.1-PERFORMANCE.html",
@@ -21,4 +21,3 @@
     }
   ]
 }
-
