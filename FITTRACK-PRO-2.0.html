@@ -286,11 +286,7 @@ function render(){
  $('#saveNutrition').onclick=()=>{let a=['nweight','ncal','nprotein','nwater'].map(id=>$('#'+id).value);if(a.some(x=>x===''))return alert('Completa los cuatro campos.');add('Nutrición',`${a[0]} kg · ${a[1]} kcal · ${a[2]} g proteína · ${a[3]} L agua`)};
  $('#saveMeasures').onclick=()=>{let a=['waist','hip','thigh','arm'].map(id=>$('#'+id).value);if(a.every(x=>x===''))return alert('Introduce al menos una medida.');add('Medidas',`Cintura ${a[0]||'—'} cm · Cadera ${a[1]||'—'} cm · Muslo ${a[2]||'—'} cm · Brazo ${a[3]||'—'} cm`)};
  }
- if(tab==='analytics'){
- const recent=logs().slice(-7),strength=logs().filter(x=>x.type==='Fuerza').length,cardio=logs().filter(x=>x.type==='Cardio').length,recovery=logs().filter(x=>x.type==='Recuperación').length,nutri=logs().filter(x=>x.type==='Nutrición').length;
- const max=Math.max(1,strength,cardio,recovery,nutri);
- v.innerHTML=header('Centro de estadísticas','Datos de tu perfil')+`<section class="hero-pro"><div class="eyebrow">PERFORMANCE ANALYTICS</div><h2>Los datos guían tu progreso.</h2><p>Resumen basado exclusivamente en tus registros guardados.</p><div class="hero-meta"><span class="stat-chip">${logs().length} REGISTROS</span><span>Últimos 7 registros: ${recent.length}</span></div></section><div class="analytics-grid"><div class="analytics-tile"><small>Fuerza</small><strong>${strength}</strong><small>registros</small></div><div class="analytics-tile"><small>Cardio</small><strong>${cardio}</strong><small>registros</small></div><div class="analytics-tile"><small>Recuperación</small><strong>${recovery}</strong><small>registros</small></div><div class="analytics-tile"><small>Nutrición</small><strong>${nutri}</strong><small>registros</small></div></div><section class="card"><h2>Distribución de registros</h2><div class="bar-list">${[['Fuerza',strength],['Cardio',cardio],['Recuperación',recovery],['Nutrición',nutri]].map(([n,val])=>`<div class="bar-row"><span>${n}</span><div class="progress-track"><div class="progress-fill" style="width:${val/max*100}%"></div></div><b>${val}</b></div>`).join('')}</div></section><section class="card"><h2>Últimos registros</h2>${entries(recent)}</section><section class="card"><h2>AI Performance Coach · vista inicial</h2><div class="insight">Este módulo todavía no utiliza un modelo de IA. Por ahora muestra un resumen automático y verificable de tus registros, sin inventar recomendaciones.</div></section>`;
- }
+ if(tab==='analytics'){renderAnalytics(v,30);return;}
  if(tab==='plans'){plannerRender(v);return}
   if(tab==='history'){
  let all=logs().slice().reverse(),weights=logs().filter(x=>x.type==='Nutrición').map(x=>({date:x.date,weight:parseFloat(x.details)})).filter(x=>Number.isFinite(x.weight));
@@ -301,6 +297,44 @@ function render(){
  $('#clear').onclick=async()=>{if(!confirm('¿Seguro que quieres borrar todos los datos de '+who()+'? Esta acción no se puede deshacer.'))return;let {error}=await db.from('activity_logs').delete().eq('profile_id',activeProfile.id);if(error)return alert('Error: '+error.message);data[who()]=[];render()};
  }
 }
+
+function svgLineChart(points,label,unit=''){
+ const valid=points.filter(p=>Number.isFinite(Number(p.value)));
+ if(valid.length<2)return `<div class="empty">Necesitas al menos dos registros válidos para mostrar la evolución de ${label.lowerCase?label.toLowerCase():label}.</div>`;
+ const vals=valid.map(p=>Number(p.value)),lo=Math.min(...vals),hi=Math.max(...vals),span=(hi-lo)||1;
+ const xy=valid.map((p,i)=>({x:24+i*252/(valid.length-1),y:126-(Number(p.value)-lo)/span*94,p}));
+ return `<div class="muted small">${esc(label)} · ${esc(unit)}</div><svg class="chart" viewBox="0 0 300 160" role="img" aria-label="${esc(label)}">${[35,80,126].map(y=>`<line x1="20" y1="${y}" x2="280" y2="${y}" stroke="var(--line)" stroke-dasharray="3 4"/>`).join('')}<polyline class="line" points="${xy.map(a=>`${a.x},${a.y}`).join(' ')}"/>${xy.map(a=>`<circle class="dot" cx="${a.x}" cy="${a.y}" r="3.5"><title>${esc(a.p.label)}: ${a.p.value}${unit}</title></circle>`).join('')}<text x="20" y="151">${esc(xy[0].p.label)}</text><text x="280" y="151" text-anchor="end">${esc(xy.at(-1).p.label)}</text></svg>`;
+}
+function analyticsBars(rows){const max=Math.max(1,...rows.map(x=>x.value));return `<div class="bar-list">${rows.map(x=>`<div class="bar-row"><span>${esc(x.label)}</span><div class="progress-track"><div class="progress-fill" style="width:${Math.max(0,Math.min(100,x.value/max*100))}%"></div></div><b>${x.value}</b></div>`).join('')}</div>`}
+async function renderAnalytics(v,days=30){
+ v.innerHTML=header('Centro de rendimiento','Análisis de tus datos')+`<section class="card"><div class="row"><div><div class="eyebrow">PERFORMANCE ANALYTICS</div><h2 style="margin-top:5px">Tu evolución</h2></div><select id="statsPeriod" class="profile" style="width:auto"><option value="7" ${days===7?'selected':''}>7 días</option><option value="30" ${days===30?'selected':''}>30 días</option><option value="90" ${days===90?'selected':''}>90 días</option><option value="365" ${days===365?'selected':''}>Temporada</option></select></div><p class="muted small">Solo se muestran datos registrados en este perfil. No se generan valores ficticios.</p><div id="statsBody" class="empty">Cargando datos de entrenamiento…</div></section>`;
+ $('#statsPeriod').onchange=()=>renderAnalytics(v,Number($('#statsPeriod').value));
+ const since=new Date();since.setDate(since.getDate()-days);const iso=since.toISOString().slice(0,10);
+ const [sessRes,setsRes,exRes]=await Promise.all([
+  db.from('training_sessions').select('*').eq('profile_id',activeProfile.id).gte('session_date',iso).order('session_date',{ascending:true}),
+  db.from('training_sets').select('*').eq('profile_id',activeProfile.id).order('completed_at',{ascending:true}),
+  db.from('training_exercises').select('id,name,session_id').eq('profile_id',activeProfile.id)
+ ]);
+ if(sessRes.error||setsRes.error||exRes.error){$('#statsBody').innerHTML=`<div class="notice">No se pudieron cargar todas las estadísticas: ${esc((sessRes.error||setsRes.error||exRes.error).message)}. Comprueba permisos y conexión.</div>`;return;}
+ const sessions=sessRes.data||[], allSets=setsRes.data||[], exercises=exRes.data||[], sessionIds=new Set(sessions.map(x=>x.id)), sets=allSets.filter(x=>sessionIds.has(x.session_id)), exMap=new Map(exercises.map(x=>[x.id,x.name]));
+ const gymSets=sets.filter(x=>x.actual_load_kg!=null&&x.actual_reps!=null), totalVolume=gymSets.reduce((a,x)=>a+Number(x.actual_load_kg)*Number(x.actual_reps),0), football=sessions.filter(x=>x.sport==='football'), gym=sessions.filter(x=>x.sport==='gym');
+ const done=sessions.filter(x=>x.status==='completed').length, sessionLoad=sessions.reduce((a,x)=>a+Number(x.session_load_au||((Number(x.session_rpe)||0)*(Number(x.duration_minutes)||0))),0), distance=sessions.reduce((a,x)=>a+Number(x.distance_km||0),0);
+ const grouped={};for(const x of gymSets){const name=exMap.get(x.exercise_id)||'Ejercicio';(grouped[name]??=[]).push(x)}
+ const exerciseNames=Object.keys(grouped).sort((a,b)=>grouped[b].length-grouped[a].length);const selectedName=exerciseNames[0];
+ const seriesPoints=selectedName?grouped[selectedName].map((x,i)=>({label:`S${i+1}`,value:Number(x.actual_load_kg)})):[];
+ const logsInPeriod=logs().filter(x=>x.date>=iso);const weightPoints=logsInPeriod.filter(x=>x.type==='Nutrición').map(x=>({label:fmt(x.date),value:Number((x.details.match(/([\d.]+)\s*kg/i)||[])[1])})).filter(x=>Number.isFinite(x.value));
+ const recovery=logsInPeriod.filter(x=>x.type==='Recuperación').map(x=>({label:fmt(x.date),value:Number((x.details.match(/Sueño\s*([\d.]+)/i)||[])[1])})).filter(x=>Number.isFinite(x.value));
+ const weekly={};for(const x of sessions){const d=new Date(x.session_date+'T12:00:00'),key=`${d.getFullYear()}-S${Math.ceil((((d-new Date(d.getFullYear(),0,1))/86400000)+new Date(d.getFullYear(),0,1).getDay()+1)/7)}`;weekly[key]=(weekly[key]||0)+Number(x.session_load_au||((Number(x.session_rpe)||0)*(Number(x.duration_minutes)||0)));}
+ const weeklyRows=Object.entries(weekly).slice(-6).map(([label,value])=>({label:label.split('-')[1],value:Math.round(value)}));
+ $('#statsBody').innerHTML=`<div class="analytics-grid"><div class="analytics-tile"><small>Sesiones</small><strong>${sessions.length}</strong><small>${done} completadas</small></div><div class="analytics-tile"><small>Series registradas</small><strong>${sets.length}</strong><small>En el periodo</small></div><div class="analytics-tile"><small>Tonelaje gym</small><strong>${Math.round(totalVolume).toLocaleString('es-ES')}</strong><small>kg × repeticiones</small></div><div class="analytics-tile"><small>Distancia fútbol</small><strong>${distance.toFixed(1)}</strong><small>km registrados</small></div><div class="analytics-tile"><small>Carga acumulada</small><strong>${Math.round(sessionLoad)}</strong><small>AU · RPE × minutos cuando falta carga</small></div><div class="analytics-tile"><small>Gimnasio / fútbol</small><strong>${gym.length} / ${football.length}</strong><small>Sesiones por modalidad</small></div></div>
+ <section class="card"><h2>Volumen de fuerza por ejercicio</h2>${selectedName?`<div class="field"><label for="statsExercise">Ejercicio</label><select id="statsExercise">${exerciseNames.map(n=>`<option ${n===selectedName?'selected':''}>${esc(n)}</option>`).join('')}</select></div><div id="exerciseChart">${svgLineChart(seriesPoints,selectedName,'kg')}</div><p class="muted small">Se representa la carga registrada por serie, no un 1RM estimado.</p>`:'<div class="empty">Todavía no hay series de gimnasio con kg y repeticiones guardadas en este periodo.</div>'}</section>
+ <section class="card"><h2>Evolución del peso</h2>${svgLineChart(weightPoints,'Peso corporal','kg')}<p class="muted small">Se extrae de tus registros de Nutrición.</p></section>
+ <section class="card"><h2>Sueño registrado</h2>${svgLineChart(recovery,'Horas de sueño','h')}<p class="muted small">Se extrae del campo Sueño de tus registros de recuperación.</p></section>
+ <section class="card"><h2>Carga semanal</h2>${weeklyRows.length?analyticsBars(weeklyRows):'<div class="empty">Aún no hay sesiones planificadas con carga o duración y RPE registrados.</div>'}<p class="muted small">Carga AU: session_load_au; si está vacío, se calcula RPE × duración. No equivale a carga GPS.</p></section>
+ <section class="card"><h2>Resumen del periodo</h2>${sessions.length?`<div class="insight">Has registrado ${sessions.length} sesiones: ${gym.length} de gimnasio y ${football.length} de fútbol. ${done} figuran como completadas. El tonelaje calculado es ${Math.round(totalVolume).toLocaleString('es-ES')} kg·repeticiones.</div>`:'<div class="empty">No hay sesiones en este periodo. Crea y registra entrenamientos en Planes para activar el análisis.</div>'}</section>`;
+ if($('#statsExercise'))$('#statsExercise').onchange=()=>{const n=$('#statsExercise').value;$('#exerciseChart').innerHTML=svgLineChart(grouped[n].map((x,i)=>({label:`S${i+1}`,value:Number(x.actual_load_kg)})),n,'kg')};
+}
+
 async function startApp(){
  const {data:{session},error}=await db.auth.getSession();if(error)throw error;
  if(!session){$('#auth').classList.remove('hidden');$('#app').hidden=true;$('#navwrap').hidden=true;return}
