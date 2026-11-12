@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101318" id="metaThemeColor"><meta name="description" content="Seguimiento de entrenamiento, recuperación y nutrición para Jere y Nicole.">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png">
+<title>FITTRACK PRO 2.0</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("fittrack-theme")||"dark"}catch(e){document.documentElement.dataset.theme="dark"}</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{color-scheme:dark;--bg:#101318;--panel:#1b2028;--panel2:#232a34;--line:#303946;--muted:#9aa5b2;--text:#f4f6f8;--accent:#b6f36b;--accentText:#17210d;--red:#ff8888;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.app{max-width:760px;margin:auto;padding:18px 16px 28px}
+.top{display:flex;align-items:center;justify-content:space-between;margin:4px 0 20px}.brand{display:flex;align-items:center;gap:11px}.logo{width:42px;height:42px;border-radius:13px;background:var(--accent);color:var(--accentText);display:grid;place-items:center;font-size:23px;font-weight:900}
+.brand strong{display:block;font-size:18px;letter-spacing:1.2px}.eyebrow{font-size:10px;color:var(--muted);letter-spacing:1.4px}.profile{background:var(--panel);border:1px solid var(--line);border-radius:13px;color:var(--text);padding:9px 12px}
+.heading{margin:20px 0 14px}.heading h1{font-size:27px;line-height:1.1;margin:0 0 5px}.muted{color:var(--muted)}.small{font-size:12px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:var(--panel);padding:5px;border-radius:15px;margin-bottom:17px}.tab{border:0;background:transparent;color:var(--muted);border-radius:11px;padding:10px 3px;font-size:11px}.tab span{display:block;font-size:17px;margin-bottom:2px}.tab.active{background:var(--accent);color:var(--accentText);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px;margin-bottom:11px}.metric{min-height:104px}.metric .ico{font-size:19px}.metric .value{font-size:26px;font-weight:750;margin:7px 0 0}.metric .label{font-size:12px;color:var(--muted)}
+h2{font-size:16px;margin:0 0 12px}h3{font-size:14px;margin:0 0 9px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.field{display:block;margin:12px 0}.field label{display:block;color:#d8dee6;font-size:12px;margin-bottom:6px}.field input,.field select,.field textarea,input,select,textarea{width:100%;background:#11161d;color:var(--text);border:1px solid var(--line);border-radius:11px;padding:11px 12px;outline:none}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+input[type=range]{padding:0;accent-color:var(--accent)}.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.btn{border:0;border-radius:12px;padding:12px 14px;background:var(--accent);color:var(--accentText);font-weight:750;width:100%;margin-top:8px}.btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.btn.danger{background:#442629;color:#ffd9d9}
+.pill{font-size:11px;color:var(--accent);background:#29351f;padding:4px 8px;border-radius:30px}.entry{padding:11px 0;border-bottom:1px solid var(--line)}.entry:last-child{border-bottom:0}.entry strong{font-size:13px}.entry p{font-size:12px;color:var(--muted);margin:4px 0 0}.empty{color:var(--muted);font-size:13px;padding:12px 0}
+.chart{width:100%;height:175px;display:block}.chart text{fill:var(--muted);font-size:10px}.chart .line{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.chart .dot{fill:var(--accent)}
+.bottom-note{font-size:11px;color:var(--muted);text-align:center;margin-top:18px}.hidden{display:none!important}.nav{position:fixed;bottom:0;left:0;right:0;background:#151a21ed;backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:9px 12px calc(9px + env(safe-area-inset-bottom));z-index:5}.navin{max-width:760px;margin:auto;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px}.nav button{border:0;background:transparent;color:var(--muted);font-size:9px;padding:4px 0;min-width:0}.nav button span{display:block;font-size:18px}.nav button.active{color:var(--accent)}
+.notice{background:#252f20;border:1px solid #465936;border-radius:12px;padding:11px;font-size:12px;color:#d9efc4;margin-bottom:12px}.filebtn{display:block;text-align:center}.filebtn input{display:none}
+#auth{position:fixed;inset:0;z-index:20;background:var(--bg);display:grid;place-items:center;padding:22px}#auth .authbox{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px}#auth h1{margin:0 0 5px;font-size:25px}#auth .muted{font-size:13px}#authError{color:#ff9b9b;font-size:12px;margin-top:10px;white-space:pre-wrap}
+#status{font-size:11px;color:var(--muted);margin-top:8px}
+.planner-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.planner-switch button{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:12px;padding:11px 8px;font-weight:700}
+.planner-switch button.active{background:var(--accent);color:var(--accentText);border-color:var(--accent)}
+.session-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin:10px 0;background:#171c23}
+.session-card p{margin:5px 0;color:var(--muted);font-size:12px}
+.session-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.session-actions button,.mini-btn{width:auto;margin:0;padding:7px 10px;font-size:12px}
+.exercise-row{padding:10px 0;border-bottom:1px solid var(--line)}
+.exercise-row:last-child{border-bottom:0}
+.badge-status{font-size:10px;padding:4px 7px;border-radius:20px;background:#29351f;color:var(--accent)}
+.live-clock{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:8px 0}.set-grid{display:grid;grid-template-columns:42px 1fr 1fr 1fr;gap:7px;align-items:center;margin:8px 0}.set-grid input{min-width:0;padding:9px 6px;text-align:center}.set-head{font-size:10px;color:var(--muted);text-align:center}.timer-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.timer-actions .btn{margin-top:0}.rest-panel{background:#17211a;border:1px solid #3d5630;border-radius:14px;padding:13px;margin-top:12px}.rest-panel.done{background:#2b2418;border-color:#80632c}.rest-mode{display:flex;gap:7px}.rest-mode button{flex:1}.rest-adjust{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.rest-adjust button{margin:0;padding:8px 4px}.rest-status{font-size:12px;color:var(--muted);margin-top:4px}
+
+:root{color-scheme:dark;--bg:#101318;--panel:#1b2028;--panel2:#232a34;--line:#303946;--muted:#9aa5b2;--text:#f4f6f8;--accent:#b6f36b;--accentText:#17210d;--red:#ff8888;--radius:18px;--input:#11161d;--navbg:rgba(21,26,33,.93);--soft:#171c23;--notice:#252f20}
+:root[data-theme="light"]{color-scheme:light;--bg:#f3f5f7;--panel:#ffffff;--panel2:#e9eef2;--line:#d7dee5;--muted:#637080;--text:#18212b;--accent:#7ab83d;--accentText:#ffffff;--red:#b42332;--input:#ffffff;--navbg:rgba(255,255,255,.94);--soft:#f7f9fb;--notice:#edf6e6}
+body{transition:background .22s ease,color .22s ease}
+.field label{color:var(--muted)}
+.field input,.field select,.field textarea,input,select,textarea{background:var(--input);color:var(--text)}
+.nav{background:var(--navbg)}
+.session-card{background:var(--soft)}
+.rest-panel{background:var(--notice)}
+.notice{background:var(--notice);color:var(--text)}
+.pill{background:var(--panel2)}
+.profile{background:var(--panel);color:var(--text)}
+.theme-toggle{width:40px;height:40px;padding:0;border:1px solid var(--line);border-radius:13px;background:var(--panel);color:var(--text);font-size:17px;display:grid;place-items:center}
+.theme-toggle:active{transform:scale(.96)}
+.card,.metric,.session-card{transition:background .2s ease,border-color .2s ease,transform .2s ease}
+@media(hover:hover){.card:hover,.session-card:hover{transform:translateY(-1px)}}
+@media(min-width:650px){.app{padding-top:28px}.heading h1{font-size:32px}}
+
+</style>
+</head>
+<body data-app-version="2.0.0">
+<div id="auth">
+  <div class="authbox">
+    <div class="brand"><div class="logo">ƒ</div><div><strong>FITTRACK</strong><div class="eyebrow">PERSONAL PERFORMANCE</div></div></div>
+    <h1 style="margin-top:24px">Iniciar sesión</h1>
+    <p class="muted">Accede a tus registros personales desde cualquier dispositivo.</p>
+    <div class="field"><label for="email">Correo electrónico</label><input id="email" type="email" autocomplete="username" placeholder="tu correo"></div>
+    <div class="field"><label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" placeholder="Tu contraseña"></div>
+    <button class="btn" id="login">Entrar</button>
+    <div id="authError"></div>
+  </div>
+</div>
+<main class="app" id="app" hidden>
+<header class="top"><div class="brand"><div class="logo">ƒ</div><div><strong>FITTRACK</strong><div class="eyebrow">PERSONAL PERFORMANCE</div></div></div>
+<div style="display:flex;gap:7px;align-items:center"><button class="theme-toggle" id="themeToggle" type="button" aria-label="Cambiar tema" title="Cambiar tema">☀</button><select id="profile" class="profile" aria-label="Perfil"></select><button class="profile" id="logout" title="Cerrar sesión">Salir</button></div></header>
+<div id="view"></div><div id="status"></div>
+<p class="bottom-note">FITTRACK · Datos sincronizados de forma segura en la nube.</p>
+</main>
+<nav class="nav" id="navwrap" hidden><div class="navin" id="nav">
+<button data-tab="home" class="active"><span>⌂</span>Inicio</button><button data-tab="gym"><span>▤</span>Gym</button><button data-tab="recovery"><span>♡</span>Estado</button><button data-tab="nutrition"><span>◉</span>Datos</button><button data-tab="history"><span>▥</span>Historial</button><button data-tab="plans"><span>▣</span>Planes</button>
+</div></nav>
+<script>
+const SUPABASE_URL='https://lkttkjbomwyjfbzdqxpt.supabase.co';
+const SUPABASE_KEY='sb_publishable_Tfb_0ukQxq9qSxFm5HWutg_4OEVzU2A';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=s=>document.querySelector(s),today=()=>new Date().toLocaleDateString('en-CA');
+function applyTheme(theme){const next=theme==='light'?'light':'dark';document.documentElement.dataset.theme=next;try{localStorage.setItem('fittrack-theme',next)}catch(e){}const b=$('#themeToggle');if(b){b.textContent=next==='dark'?'☀':'☾';b.setAttribute('aria-label',next==='dark'?'Activar modo claro':'Activar modo oscuro');b.title=next==='dark'?'Activar modo claro':'Activar modo oscuro'}const m=$('#metaThemeColor');if(m)m.content=next==='dark'?'#101318':'#f3f5f7'}
+
+let tab='home',data={Jere:[],Nicole:[]},profiles=[],activeProfile=null,user=null,busy=false;
+let plannerSport='gym',plannerPlans=[],plannerSessions=[],plannerExercises=[];
+let editingSessionId=null,selectedSessionId=null;
+let activeWorkout=null,workoutTick=null,restTick=null,sessionSetRows=[],plannerSetRecords=[];
+function workoutKey(){return `fittrack-live-${activeProfile?.id||'none'}`}
+function restoreWorkout(){try{activeWorkout=JSON.parse(localStorage.getItem(workoutKey())||'null');if(activeWorkout){activeWorkout.rest_mode||='countdown';activeWorkout.rest_target_seconds??=activeWorkout.rest_seconds||0;activeWorkout.rest_elapsed_before??=0;activeWorkout.rest_paused_at??=null}}catch{activeWorkout=null}}
+function persistWorkout(){if(activeWorkout)localStorage.setItem(workoutKey(),JSON.stringify(activeWorkout));else localStorage.removeItem(workoutKey())}
+function clockText(seconds){seconds=Math.max(0,Math.floor(seconds));return `${String(Math.floor(seconds/3600)).padStart(2,'0')}:${String(Math.floor(seconds%3600/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`}
+function restElapsedSeconds(){
+ if(!activeWorkout)return 0;
+ const base=Number(activeWorkout.rest_elapsed_before||0);
+ return Math.max(0,base+(activeWorkout.rest_paused_at?0:(activeWorkout.rest_started_at?((Date.now()-activeWorkout.rest_started_at)/1000):0)));
+}
+function updateWorkoutClocks(){
+ const elapsed=$('#liveElapsed');
+ if(elapsed&&activeWorkout){const sec=(activeWorkout.elapsed_before||0)+(activeWorkout.paused_at?0:(Date.now()-activeWorkout.started_at)/1000);elapsed.textContent=clockText(sec)}
+ const rest=$('#restElapsed');
+ if(rest&&activeWorkout){
+   const mode=activeWorkout.rest_mode||'countdown';
+   const spent=restElapsedSeconds();
+   const target=Number(activeWorkout.rest_target_seconds??activeWorkout.rest_seconds??0);
+   const value=mode==='countdown'?Math.max(0,target-spent):spent;
+   rest.textContent=clockText(value);
+   const done=mode==='countdown'&&target>0&&spent>=target;
+   const panel=$('#restPanel');if(panel)panel.classList.toggle('done',done);
+   const label=$('#restStatus');if(label)label.textContent=done?'Descanso completado · listo para la siguiente serie':(activeWorkout.rest_paused_at?'Descanso pausado':mode==='countdown'?'Cuenta atrás en curso':'Tiempo de descanso transcurrido');
+   if(done&&!activeWorkout.rest_alerted){activeWorkout.rest_alerted=true;persistWorkout();const notice=$('#restNotice');if(notice)notice.hidden=false;if(navigator.vibrate)navigator.vibrate([250,120,250]);}
+ }
+}
+function startWorkoutClock(){clearInterval(workoutTick);workoutTick=setInterval(updateWorkoutClocks,500);updateWorkoutClocks()}
+function stopWorkoutClock(){clearInterval(workoutTick);workoutTick=null;clearInterval(restTick);restTick=null}
+function who(){return activeProfile?.name||'Jere'}function logs(){return data[who()]||[]}
+function status(t){$('#status').textContent=t||''}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmt(d){return new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short'})}
+function field(label,id,type='text',value='',placeholder=''){return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${esc(value)}" placeholder="${placeholder}"></div>`}
+function metric(icon,val,label){return `<div class="card metric"><div class="ico">${icon}</div><div class="value">${val}</div><div class="label">${label}</div></div>`}
+function entries(list){if(!list.length)return '<div class="empty">Todavía no hay registros.</div>';return list.slice().reverse().slice(0,8).map(x=>`<div class="entry"><div class="row"><strong>${esc(x.type)}</strong><span class="muted small">${fmt(x.date)}</span></div><p>${esc(x.details)}</p></div>`).join('')}
+function weightChart(items){if(items.length<2)return '<div class="empty">Registra tu peso al menos dos veces para ver la gráfica.</div>';let a=items.slice(-8),vals=a.map(x=>x.weight),min=Math.min(...vals)-1,max=Math.max(...vals)+1,pts=a.map((x,i)=>`${20+i*260/(a.length-1)},${140-(x.weight-min)/(max-min)*110}`).join(' ');return `<svg class="chart" viewBox="0 0 300 165" role="img" aria-label="Gráfica de evolución del peso"><line x1="20" y1="140" x2="280" y2="140" stroke="#303946"/><polyline class="line" points="${pts}"/>${a.map((x,i)=>`<circle class="dot" cx="${20+i*260/(a.length-1)}" cy="${140-(x.weight-min)/(max-min)*110}" r="3.5"/><text x="${20+i*260/(a.length-1)}" y="158" text-anchor="middle">${fmt(x.date)}</text>`).join('')}</svg>`}
+function latest(type){return logs().filter(x=>x.type===type).at(-1)}function getNum(type,regex){let x=latest(type);if(!x)return '—';let m=x.details.match(regex);return m?m[1]:'—'}
+function header(title,sub){return `<div class="heading"><h1>${title}</h1><div class="muted small">${esc(who())} · ${sub}</div></div>`}
+async function loadProfiles(){
+ const {data:m,error:me}=await db.from('profile_memberships').select('profile_id').eq('member_user_id',user.id);
+ if(me)throw me;if(!m?.length)throw new Error('Esta cuenta todavía no tiene ningún perfil asignado.');
+ const ids=m.map(x=>x.profile_id);
+ const {data:p,error:pe}=await db.from('profiles').select('id,name').in('id',ids);
+ if(pe)throw pe;profiles=p||[];
+ if(!profiles.length)throw new Error('No se encontraron perfiles para esta cuenta.');
+ const preferred=profiles.find(x=>x.name==='Jere')||profiles[0];activeProfile=preferred;
+ $('#profile').innerHTML=profiles.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('');
+ $('#profile').value=activeProfile.id;
+}
+async function loadLogs(){
+ if(!activeProfile)return;
+ status('Sincronizando…');
+ const {data:rows,error}=await db.from('activity_logs').select('id,recorded_on,record_type,details,created_at').eq('profile_id',activeProfile.id).order('recorded_on',{ascending:true}).order('created_at',{ascending:true});
+ if(error)throw error;
+ data[who()]=(rows||[]).map(x=>({id:x.id,date:x.recorded_on,type:x.record_type,details:x.details}));
+ status('Sincronizado · '+new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}));
+ render();
+}
+async function add(type,details,date=today()){
+ if(busy)return;busy=true;status('Guardando…');
+ const {data:row,error}=await db.from('activity_logs').insert({profile_id:activeProfile.id,recorded_on:date,record_type:type,details}).select('id,recorded_on,record_type,details').single();
+ busy=false;
+ if(error){status('');alert('No se ha podido guardar: '+error.message);return}
+ data[who()].push({id:row.id,date:row.recorded_on,type:row.record_type,details:row.details});render();status('Guardado y sincronizado.');
+}
+
+async function plannerLoad(){
+  if(!activeProfile)return;
+  const [plansRes,sessionsRes]=await Promise.all([
+    db.from('training_plans').select('*').eq('profile_id',activeProfile.id).eq('sport',plannerSport).order('created_at',{ascending:false}),
+    db.from('training_sessions').select('*').eq('profile_id',activeProfile.id).eq('sport',plannerSport).order('session_date',{ascending:false})
+  ]);
+  if(plansRes.error)throw plansRes.error;
+  if(sessionsRes.error)throw sessionsRes.error;
+  plannerPlans=plansRes.data||[];
+  plannerSessions=sessionsRes.data||[];
+  if(selectedSessionId && !plannerSessions.some(x=>x.id===selectedSessionId))selectedSessionId=null;
+  if(selectedSessionId)await plannerLoadExercises(selectedSessionId);
+  else plannerExercises=[];
+}
+async function plannerLoadExercises(sessionId){
+  const {data,error}=await db.from('training_exercises').select('*').eq('session_id',sessionId).eq('profile_id',activeProfile.id).order('order_index',{ascending:true});
+  if(error)throw error;
+  plannerExercises=data||[];
+  const setsRes=await db.from('training_sets').select('*').eq('session_id',sessionId).eq('profile_id',activeProfile.id).order('set_number',{ascending:true});
+  if(setsRes.error)throw setsRes.error;plannerSetRecords=setsRes.data||[];
+}
+function plannerField(label,id,type='text',placeholder='',value=''){
+  return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" placeholder="${placeholder}" value="${esc(value??'')}"></div>`;
+}
+function plannerSelect(label,id,options,value){
+  return `<div class="field"><label for="${id}">${label}</label><select id="${id}">${options.map(x=>`<option value="${x[0]}" ${x[0]===value?'selected':''}>${x[1]}</option>`).join('')}</select></div>`;
+}
+function plannerRender(v){
+  const isGym=plannerSport==='gym';
+  const title=isGym?'Planificador de gimnasio':'Planificador de fútbol';
+  const session=plannerSessions.find(x=>x.id===selectedSessionId);
+  const editing=editingSessionId?plannerSessions.find(x=>x.id===editingSessionId):null;
+  const sessionForm=`
+    <section class="card"><h2>${editing?'Editar sesión':'Crear sesión'}</h2>
+      ${plannerField('Nombre de la sesión','pTitle','text','Ej. Fuerza tren inferior',editing?.title||'')}
+      <div class="two">${plannerField('Fecha','pDate','date','',editing?.session_date||today())}${plannerSelect('Estado','pStatus',[['planned','Planificada'],['completed','Completada'],['skipped','No realizada']],editing?.status||'planned')}</div>
+      ${plannerField('Objetivo','pObjective','text','Ej. Fuerza máxima / aceleración',editing?.objective||'')}
+      <div class="two">${plannerField('Tipo de sesión','pType','text',isGym?'Ej. Fuerza, hipertrofia':'Ej. Técnico-táctica, velocidad',editing?.session_type||'')}${plannerField('Duración (min)','pDuration','number','60',editing?.duration_minutes??'')}</div>
+      <div class="two">${plannerField('Distancia total (km)','pDistance','number','Ej. 6.5',editing?.distance_km??'')}${plannerSelect('Intensidad','pIntensity',[['','Sin especificar'],['Baja','Baja'],['Moderada','Moderada'],['Alta','Alta'],['Muy alta','Muy alta']],editing?.intensity||'')}</div>
+      <div class="two">${plannerField('RPE de sesión (0–10)','pRpe','number','Ej. 7',editing?.session_rpe??'')}${plannerField('Carga (AU)','pLoad','number','RPE × minutos',editing?.session_load_au??'')}</div>
+      <div class="field"><label for="pNotes">Notas</label><textarea id="pNotes" rows="2" placeholder="Indicaciones, sensaciones, contexto...">${esc(editing?.notes||'')}</textarea></div>
+      <button class="btn" id="savePlannerSession">${editing?'Guardar cambios':'Crear sesión'}</button>
+      ${editing?'<button class="btn secondary" id="cancelPlannerEdit">Cancelar edición</button>':''}
+    </section>`;
+  const templateForm=`
+    <section class="card"><h2>Plantillas de ${isGym?'gimnasio':'fútbol'}</h2>
+      <div class="two">${plannerField('Nombre de plantilla','pPlanName','text','Ej. Sesión fuerza A')}${plannerField('Descripción','pPlanDesc','text','Objetivo o contenido')}</div>
+      <button class="btn secondary" id="savePlannerTemplate">Guardar plantilla</button>
+      ${plannerPlans.length?plannerPlans.map(p=>`<div class="entry"><div class="row"><strong>${esc(p.name)}</strong><button class="mini-btn btn secondary usePlan" data-id="${p.id}">Usar</button></div><p>${esc(p.description||'Sin descripción')}</p><button class="mini-btn btn danger deletePlan" data-id="${p.id}">Eliminar plantilla</button></div>`).join(''):'<div class="empty">Todavía no hay plantillas.</div>'}
+    </section>`;
+  const sessionList=plannerSessions.length?plannerSessions.map(s=>`
+    <div class="session-card">
+      <div class="row"><strong>${esc(s.title)}</strong><span class="badge-status">${s.status==='completed'?'Completada':s.status==='skipped'?'No realizada':'Planificada'}</span></div>
+      <p>${fmt(s.session_date)} · ${esc(s.session_type||'Sesión')} ${s.duration_minutes?`· ${s.duration_minutes} min`:''} ${s.distance_km?`· ${s.distance_km} km`:''}</p>
+      <p>${esc(s.objective||'Sin objetivo')} ${s.session_rpe!==null?`· RPE ${s.session_rpe}`:''}</p>
+      <div class="session-actions"><button class="btn secondary mini-btn openSession" data-id="${s.id}">Ver / ejercicios</button><button class="btn secondary mini-btn editSession" data-id="${s.id}">Editar</button><button class="btn danger mini-btn deleteSession" data-id="${s.id}">Eliminar</button></div>
+    </div>`).join(''):'<div class="empty">No hay sesiones todavía. Crea la primera arriba.</div>';
+  let detail='';
+  if(session){
+    detail=`<section class="card"><div class="row"><h2>${esc(session.title)}</h2><button class="btn secondary mini-btn" id="closeSession">Cerrar</button></div>
+      <p class="muted small">${fmt(session.session_date)} · ${esc(session.objective||'')}</p>
+      ${activeWorkout?.session_id===session.id ? `<section class="card" style="background:#11161d;margin-top:12px"><div class="row"><h3>Entrenamiento en directo</h3><span class="badge-status">${activeWorkout.paused_at?'Pausado':'En curso'}</span></div><div class="muted small">Tiempo total</div><div class="live-clock" id="liveElapsed">00:00:00</div><div class="timer-actions"><button class="btn secondary" id="pauseWorkout">${activeWorkout.paused_at?'Reanudar':'Pausar'}</button><button class="btn danger" id="finishWorkout">Finalizar sesión</button></div><section class="rest-panel" id="restPanel"><div class="row"><h3> Cronómetro de descanso</h3><span class="badge-status">Independiente</span></div><div class="rest-mode"><button class="btn mini-btn ${activeWorkout.rest_mode!=='countup'?'':'secondary'}" id="restDownMode">Cuenta atrás</button><button class="btn mini-btn ${activeWorkout.rest_mode==='countup'?'':'secondary'}" id="restUpMode">Cuenta ascendente</button></div><div class="live-clock" id="restElapsed">00:00:00</div><div class="rest-status" id="restStatus">Listo para descansar</div><div id="restNotice" class="notice" ${activeWorkout.rest_alerted?'':'hidden'}>Descanso completado. Puedes comenzar la siguiente serie.</div><div class="timer-actions"><button class="btn secondary" id="pauseRest">${activeWorkout.rest_paused_at?'Reanudar':'Pausar'}</button><button class="btn secondary" id="resetRest">Reiniciar</button></div><div class="rest-adjust" style="margin-top:8px"><button class="btn secondary restAdjust" data-seconds="-15">−15 s</button><button class="btn secondary restAdjust" data-seconds="5">+5 s</button><button class="btn secondary restAdjust" data-seconds="15">+15 s</button></div><button class="btn secondary" id="stopRest">Terminar descanso</button></section>` : `<div class="notice">Cuando estés listo en el gimnasio o en el campo, inicia aquí el cronómetro. Podrás pausarlo y registrar cada serie o bloque.</div><button class="btn" id="startWorkout">▶ EMPEZAR ENTRENAMIENTO</button>`}
+      ${plannerExercises.length?`<section class="card"><h3>Registrar trabajo realizado</h3><p class="muted small">Pulsa «Empezar entrenamiento» para activar el cronómetro. Después registra kg, repeticiones y RPE de cada serie; el descanso se inicia al guardar cada serie.</p>${plannerExercises.map((e,i)=>`<div class="exercise-row"><strong>${i+1}. ${esc(e.name)}</strong><p class="muted small">Objetivo: ${e.sets||'—'} series/bloques · ${e.reps||'—'} reps · ${e.load_kg??'—'} kg · descanso ${e.rest_seconds||0}s</p>${Array.from({length:Math.max(1,Math.min(30,e.sets||1))},(_,j)=>`<div class="set-grid"><strong>${j+1}</strong><div><div class="set-head">${isGym?'KG':'Duración s'}</div><input id="set-${e.id}-${j}-load" type="number" step="0.5" value="${plannerSetRecords.find(x=>x.exercise_id===e.id&&x.set_number===j+1)?.actual_load_kg??plannerSetRecords.find(x=>x.exercise_id===e.id&&x.set_number===j+1)?.duration_seconds??''}" placeholder="${isGym?(e.load_kg??'kg'):'seg'}" /></div><div><div class="set-head">${isGym?'Reps':'Dist. m'}</div><input id="set-${e.id}-${j}-reps" type="number" value="${plannerSetRecords.find(x=>x.exercise_id===e.id&&x.set_number===j+1)?.actual_reps??plannerSetRecords.find(x=>x.exercise_id===e.id&&x.set_number===j+1)?.distance_m??''}" placeholder="${isGym?(e.reps??'reps'):'m'}" /></div><div><div class="set-head">RPE</div><input id="set-${e.id}-${j}-rpe" type="number" min="0" max="10" step="0.5" value="${plannerSetRecords.find(x=>x.exercise_id===e.id&&x.set_number===j+1)?.actual_rpe??''}" placeholder="RPE" /></div></div><button class="btn secondary mini-btn saveSet" data-exercise="${e.id}" data-set="${j+1}" style="width:100%">Guardar ${isGym?'serie':'bloque'} ${j+1}</button>`).join('')}</div>`).join('')}</section>`:''}
+      <h3 style="margin-top:15px">Añadir ${isGym?'ejercicio':'tarea / bloque'}</h3>
+      ${plannerField(isGym?'Ejercicio':'Tarea / bloque','eName','text',isGym?'Ej. Sentadilla':'Ej. Juego de posición 6v6')}
+      <div class="two">${plannerField('Categoría','eCategory','text',isGym?'Fuerza':'Técnico-táctico')}${plannerField('Series / bloques','eSets','number','4')}</div>
+      <div class="two">${plannerField(isGym?'Repeticiones':'Repeticiones (si aplica)','eReps','number','8')}${plannerField(isGym?'Carga (kg)':'Duración por bloque (seg)','eLoadOrDuration','number',isGym?'80':'240')}</div>
+      <div class="two">${plannerField('Descanso (seg)','eRest','number','120')}${plannerField('RPE (0–10)','eRpe','number','7')}</div>
+      <div class="two">${plannerField('Duración (seg)','eDuration','number','')}${plannerField('Distancia (m)','eDistance','number',isGym?'':'200')}</div>
+      ${plannerSelect('Intensidad','eIntensity',[['','Sin especificar'],['Baja','Baja'],['Moderada','Moderada'],['Alta','Alta'],['Máxima','Máxima']],'')}
+      <div class="field"><label for="eNotes">Notas</label><textarea id="eNotes" rows="2" placeholder="Técnica, pausas, consignas..."></textarea></div>
+      <button class="btn" id="addPlannerExercise">Añadir ${isGym?'ejercicio':'tarea'}</button>
+      <h3 style="margin-top:18px">Contenido de la sesión (${plannerExercises.length})</h3>
+      ${plannerExercises.length?plannerExercises.map((e,i)=>`<div class="exercise-row"><div class="row"><strong>${i+1}. ${esc(e.name)}</strong><button class="btn danger mini-btn deleteExercise" data-id="${e.id}">Eliminar</button></div><p class="muted small">${[e.category,e.sets?`${e.sets} series/bloques`:null,e.reps?`${e.reps} reps`:null,e.load_kg!==null?`${e.load_kg} kg`:null,e.duration_seconds?`${e.duration_seconds} s`:null,e.distance_m?`${e.distance_m} m`:null,e.rest_seconds?`${e.rest_seconds}s descanso`:null,e.rpe!==null?`RPE ${e.rpe}`:null,e.intensity].filter(Boolean).join(' · ')}</p>${e.notes?`<p>${esc(e.notes)}</p>`:''}</div>`).join(''):'<div class="empty">Añade los ejercicios o tareas de esta sesión.</div>'}
+    </section>`;
+  }
+  v.innerHTML=header('Planificación',`${title} · ${esc(who())}`)+
+    `<div class="planner-switch"><button data-sport="gym" class="${isGym?'active':''}">🏋️ Gimnasio</button><button data-sport="football" class="${!isGym?'active':''}">⚽ Fútbol</button></div>`+
+    `<div class="notice">Planificadores independientes. Los planes y sesiones se guardan en la nube en el perfil seleccionado.</div>`+
+    sessionForm+templateForm+
+    `<section class="card"><h2>Sesiones ${isGym?'de gimnasio':'de fútbol'}</h2>${sessionList}</section>`+detail;
+  v.querySelectorAll('[data-sport]').forEach(b=>b.onclick=async()=>{plannerSport=b.dataset.sport;editingSessionId=null;selectedSessionId=null;try{await plannerLoad();plannerRender($('#view'))}catch(e){alert('Error al cargar el planificador: '+e.message)}});
+  $('#savePlannerSession').onclick=async()=>{
+    const title=$('#pTitle').value.trim();if(!title)return alert('Escribe el nombre de la sesión.');
+    const n=id=>$('#'+id).value===''?null:Number($('#'+id).value);
+    const payload={profile_id:activeProfile.id,sport:plannerSport,title,session_date:$('#pDate').value||today(),status:$('#pStatus').value,objective:$('#pObjective').value.trim()||null,session_type:$('#pType').value.trim()||null,duration_minutes:n('pDuration'),distance_km:n('pDistance'),intensity:$('#pIntensity').value||null,session_rpe:n('pRpe'),session_load_au:n('pLoad'),notes:$('#pNotes').value.trim()||null};
+    const result=editing?await db.from('training_sessions').update(payload).eq('id',editing.id).eq('profile_id',activeProfile.id):await db.from('training_sessions').insert(payload);
+    if(result.error)return alert('No se ha podido guardar: '+result.error.message);
+    editingSessionId=null;await plannerLoad();plannerRender($('#view'));
+  };
+  if($('#cancelPlannerEdit'))$('#cancelPlannerEdit').onclick=()=>{editingSessionId=null;plannerRender($('#view'))};
+  $('#savePlannerTemplate').onclick=async()=>{const name=$('#pPlanName').value.trim();if(!name)return alert('Escribe el nombre de la plantilla.');const {error}=await db.from('training_plans').insert({profile_id:activeProfile.id,sport:plannerSport,name,description:$('#pPlanDesc').value.trim()||null,is_template:true});if(error)return alert('No se ha podido guardar la plantilla: '+error.message);await plannerLoad();plannerRender($('#view'))};
+  v.querySelectorAll('.usePlan').forEach(b=>b.onclick=()=>{const p=plannerPlans.find(x=>x.id===b.dataset.id);if(!p)return;editingSessionId=null;$('#pTitle').value=p.name;$('#pObjective').value=p.description||'';window.scrollTo({top:0,behavior:'smooth'})});
+  v.querySelectorAll('.deletePlan').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar esta plantilla?'))return;const {error}=await db.from('training_plans').delete().eq('id',b.dataset.id).eq('profile_id',activeProfile.id);if(error)return alert(error.message);await plannerLoad();plannerRender($('#view'))});
+  v.querySelectorAll('.openSession').forEach(b=>b.onclick=async()=>{selectedSessionId=b.dataset.id;try{await plannerLoadExercises(selectedSessionId);plannerRender($('#view'))}catch(e){alert(e.message)}});
+  v.querySelectorAll('.editSession').forEach(b=>b.onclick=()=>{editingSessionId=b.dataset.id;plannerRender($('#view'));window.scrollTo({top:0,behavior:'smooth'})});
+  v.querySelectorAll('.deleteSession').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar esta sesión y sus ejercicios?'))return;const {error}=await db.from('training_sessions').delete().eq('id',b.dataset.id).eq('profile_id',activeProfile.id);if(error)return alert(error.message);if(selectedSessionId===b.dataset.id)selectedSessionId=null;await plannerLoad();plannerRender($('#view'))});
+  if($('#closeSession'))$('#closeSession').onclick=()=>{selectedSessionId=null;plannerExercises=[];plannerRender($('#view'))};
+  if($('#startWorkout'))$('#startWorkout').onclick=()=>{activeWorkout={session_id:selectedSessionId,profile_id:activeProfile.id,started_at:Date.now(),elapsed_before:0,paused_at:null,rest_started_at:null,rest_seconds:0,rest_target_seconds:0,rest_elapsed_before:0,rest_paused_at:null,rest_mode:'countdown',rest_alerted:false};persistWorkout();plannerRender($('#view'));startWorkoutClock()};
+  if($('#pauseWorkout'))$('#pauseWorkout').onclick=()=>{if(activeWorkout.paused_at){activeWorkout.started_at+=Date.now()-activeWorkout.paused_at;activeWorkout.paused_at=null}else{activeWorkout.paused_at=Date.now()}persistWorkout();plannerRender($('#view'));startWorkoutClock()};
+  if($('#finishWorkout'))$('#finishWorkout').onclick=async()=>{if(!confirm('¿Finalizar y guardar esta sesión?'))return;const end=Date.now();const total=Math.round(((activeWorkout.elapsed_before||0)+(activeWorkout.paused_at?activeWorkout.paused_at: end)-activeWorkout.started_at)/60000);const {error}=await db.from('training_sessions').update({status:'completed',duration_minutes:Math.max(1,total)}).eq('id',selectedSessionId).eq('profile_id',activeProfile.id);if(error)return alert('No se pudo finalizar: '+error.message);activeWorkout=null;persistWorkout();stopWorkoutClock();await plannerLoad();plannerRender($('#view'))};
+  if($('#stopRest'))$('#stopRest').onclick=()=>{activeWorkout.rest_started_at=null;activeWorkout.rest_paused_at=null;activeWorkout.rest_elapsed_before=0;activeWorkout.rest_alerted=false;persistWorkout();plannerRender($('#view'));startWorkoutClock()};
+  if($('#pauseRest'))$('#pauseRest').onclick=()=>{if(activeWorkout.rest_paused_at){activeWorkout.rest_started_at=Date.now();activeWorkout.rest_paused_at=null}else{activeWorkout.rest_elapsed_before=restElapsedSeconds();activeWorkout.rest_paused_at=Date.now();activeWorkout.rest_started_at=null}persistWorkout();plannerRender($('#view'));startWorkoutClock()};
+  if($('#resetRest'))$('#resetRest').onclick=()=>{activeWorkout.rest_elapsed_before=0;activeWorkout.rest_paused_at=null;activeWorkout.rest_started_at=Date.now();activeWorkout.rest_alerted=false;persistWorkout();plannerRender($('#view'));startWorkoutClock()};
+  if($('#restDownMode'))$('#restDownMode').onclick=()=>{activeWorkout.rest_mode='countdown';activeWorkout.rest_elapsed_before=0;activeWorkout.rest_paused_at=null;activeWorkout.rest_started_at=Date.now();activeWorkout.rest_alerted=false;persistWorkout();plannerRender($('#view'));startWorkoutClock()};
+  if($('#restUpMode'))$('#restUpMode').onclick=()=>{activeWorkout.rest_mode='countup';activeWorkout.rest_elapsed_before=0;activeWorkout.rest_paused_at=null;activeWorkout.rest_started_at=Date.now();activeWorkout.rest_alerted=false;persistWorkout();plannerRender($('#view'));startWorkoutClock()};
+  v.querySelectorAll('.restAdjust').forEach(b=>b.onclick=()=>{const delta=Number(b.dataset.seconds);if((activeWorkout.rest_mode||'countdown')==='countdown'){activeWorkout.rest_target_seconds=Math.max(0,Number(activeWorkout.rest_target_seconds||activeWorkout.rest_seconds||0)+delta);activeWorkout.rest_seconds=activeWorkout.rest_target_seconds;if(restElapsedSeconds()>=activeWorkout.rest_target_seconds)activeWorkout.rest_alerted=true;else activeWorkout.rest_alerted=false}else{activeWorkout.rest_elapsed_before=Math.max(0,restElapsedSeconds()+delta);activeWorkout.rest_started_at=activeWorkout.rest_paused_at?null:Date.now()}persistWorkout();updateWorkoutClocks()});
+  v.querySelectorAll('.saveSet').forEach(b=>b.onclick=async()=>{if(!activeWorkout||activeWorkout.session_id!==selectedSessionId)return alert('Primero pulsa Empezar entrenamiento.');const ex=b.dataset.exercise,num=Number(b.dataset.set),load=$(`#set-${ex}-${num-1}-load`).value,reps=$(`#set-${ex}-${num-1}-reps`).value,rpe=$(`#set-${ex}-${num-1}-rpe`).value;const exercise=plannerExercises.find(x=>x.id===ex);const payload={profile_id:activeProfile.id,session_id:selectedSessionId,exercise_id:ex,set_number:num,actual_load_kg:load===''?null:Number(load),actual_reps:reps===''?null:Number(reps),actual_rpe:rpe===''?null:Number(rpe),duration_seconds:plannerSport==='football'&&load!==''?Number(load):null,distance_m:plannerSport==='football'&&reps!==''?Number(reps):null,rest_seconds:exercise?.rest_seconds??null,completed:true,completed_at:new Date().toISOString()};const {error}=await db.from('training_sets').upsert(payload,{onConflict:'exercise_id,set_number'});if(error)return alert('No se pudo guardar la serie: '+error.message);activeWorkout.rest_started_at=Date.now();activeWorkout.rest_paused_at=null;activeWorkout.rest_elapsed_before=0;activeWorkout.rest_mode='countdown';activeWorkout.rest_seconds=exercise?.rest_seconds||0;activeWorkout.rest_target_seconds=exercise?.rest_seconds||0;if(!activeWorkout.rest_target_seconds)activeWorkout.rest_mode='countup';activeWorkout.rest_alerted=false;persistWorkout();plannerRender($('#view'));startWorkoutClock()});
+  if($('#addPlannerExercise'))$('#addPlannerExercise').onclick=async()=>{
+    const name=$('#eName').value.trim();if(!name)return alert('Escribe el nombre del ejercicio o tarea.');
+    const n=id=>$('#'+id).value===''?null:Number($('#'+id).value);
+    const payload={profile_id:activeProfile.id,session_id:selectedSessionId,order_index:plannerExercises.length,name,category:$('#eCategory').value.trim()||null,sets:n('eSets'),reps:n('eReps'),load_kg:isGym?n('eLoadOrDuration'):null,rest_seconds:n('eRest'),rpe:n('eRpe'),duration_seconds:isGym?n('eDuration'):(n('eDuration')??n('eLoadOrDuration')),distance_m:n('eDistance'),intensity:$('#eIntensity').value||null,notes:$('#eNotes').value.trim()||null};
+    const {error}=await db.from('training_exercises').insert(payload);if(error)return alert('No se ha podido añadir: '+error.message);await plannerLoadExercises(selectedSessionId);plannerRender($('#view'));
+  };
+  v.querySelectorAll('.deleteExercise').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar este ejercicio o tarea?'))return;const {error}=await db.from('training_exercises').delete().eq('id',b.dataset.id).eq('profile_id',activeProfile.id);if(error)return alert(error.message);await plannerLoadExercises(selectedSessionId);plannerRender($('#view'))});
+  if(activeWorkout && activeWorkout.session_id===selectedSessionId) startWorkoutClock();
+}
+
+function render(){
+ document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+ let v=$('#view');if(!v)return;
+ if(tab==='home'){
+ let w=getNum('Nutrición',/([\d.]+)\s*kg/),s=getNum('Recuperación',/Sueño\s*([\d.]+)/),work=logs().filter(x=>x.type==='Fuerza'||x.type==='Cardio').length;
+ v.innerHTML=header('Tu actividad','Resumen personal')+`<section class="card" style="background:linear-gradient(135deg,var(--panel),var(--panel2));border-color:var(--line)"><div class="row"><div><div class="eyebrow">PERSONAL PERFORMANCE</div><h2 style="font-size:20px;margin:5px 0 2px">Tu progreso, bajo control.</h2><div class="muted small">Entrena · Registra · Analiza · Mejora</div></div><div style="font-size:30px">✦</div></div><div class="row" style="margin-top:13px"><span class="pill">FITTRACK PRO 2.0</span><span class="small muted">Vista general</span></div></section><div class="grid">${metric('⚖️',w==='—'?'—':w+' kg','Último peso')}${metric('☾',s==='—'?'—':s+' h','Último sueño')}${metric('▤',work,'Sesiones registradas')}${metric('✚',logs().length,'Registros totales')}</div><section class="card"><div class="row"><h2>Registro rápido de hoy</h2><span class="pill">${fmt(today())}</span></div><div class="two">${field('Horas de sueño','qsleep','number','','Ej. 8')}${field('Cansancio (1–10)','qfatigue','number','','Ej. 4')}${field('Energía (1–10)','qenergy','number','','Ej. 7')}${field('Estrés (1–10)','qstress','number','','Ej. 3')}</div>${field('Agujetas / dolor muscular (1–10)','qsoreness','number','','Ej. 3')}<button class="btn" id="quickSave">Guardar estado diario</button></section><section class="card"><h2>Actividad reciente</h2>${entries(logs())}</section>`;
+ $('#quickSave').onclick=()=>{let vals=['qsleep','qfatigue','qenergy','qstress','qsoreness'].map(id=>$('#'+id).value);if(vals.some(x=>x===''))return alert('Completa todos los campos.');add('Recuperación',`Sueño ${vals[0]} h · Cansancio ${vals[1]}/10 · Energía ${vals[2]}/10 · Estrés ${vals[3]}/10 · Agujetas ${vals[4]}/10`)}
+ }
+ if(tab==='gym'){
+ v.innerHTML=header('Entrenamiento','Fuerza y cardio')+`<section class="card"><h2>Registrar fuerza</h2><div class="field"><label>Tipo de sesión</label><select id="gtype"><option>Full Body</option><option>Tren superior</option><option>Tren inferior</option><option>Fútbol</option><option>Otro</option></select></div>${field('Ejercicio','exercise','text','','Ej. Sentadilla')}<div class="three">${field('Series','sets','number','','4')}${field('Repeticiones','reps','number','','8')}${field('Peso (kg)','kg','number','','60')}</div><button class="btn" id="addStrength">Añadir ejercicio</button></section><section class="card"><h2>Registrar cardio</h2><div class="field"><label>Modalidad</label><select id="ctype"><option>Caminata inclinada</option><option>Cinta de correr</option><option>Bicicleta</option><option>Elíptica</option><option>Intervalos</option><option>Caminata exterior</option><option>Fútbol</option></select></div><div class="two">${field('Duración (min)','mins','number','','25')}${field('Distancia (km), opcional','dist','number','','2.5')}</div><button class="btn" id="addCardio">Añadir cardio</button></section><section class="card"><h2>Entrenamientos recientes</h2>${entries(logs().filter(x=>x.type==='Fuerza'||x.type==='Cardio'))}</section>`;
+ $('#addStrength').onclick=()=>{let e=$('#exercise').value.trim(),s=$('#sets').value,r=$('#reps').value,k=$('#kg').value;if(!e||!s||!r||!k)return alert('Completa ejercicio, series, repeticiones y peso.');add('Fuerza',`${$('#gtype').value} · ${e} · ${s} × ${r} · ${k} kg`)};
+ $('#addCardio').onclick=()=>{let m=$('#mins').value;if(!m||+m<=0)return alert('Introduce una duración válida.');add('Cardio',`${$('#ctype').value} · ${m} min${$('#dist').value?' · '+$('#dist').value+' km':''}`)};
+ }
+ if(tab==='recovery'){
+ v.innerHTML=header('Recuperación','Sueño y bienestar')+`<section class="card"><h2>Control diario</h2><div class="two">${field('Horas de sueño','rsleep','number','','Ej. 7.5')}${field('Calidad del sueño (1–10)','rquality','number','','Ej. 8')}${field('Cansancio (1–10)','rfatigue','number','','Ej. 4')}${field('Energía (1–10)','renergy','number','','Ej. 7')}${field('Estrés (1–10)','rstress','number','','Ej. 3')}${field('Agujetas (1–10)','rsoreness','number','','Ej. 3')}</div>${field('Molestias o notas','rnotes','text','','Ej. piernas cargadas')}<button class="btn" id="saveRecovery">Guardar recuperación</button></section><section class="card"><h2>Historial de recuperación</h2>${entries(logs().filter(x=>x.type==='Recuperación'))}</section>`;
+ $('#saveRecovery').onclick=()=>{let ids=['rsleep','rquality','rfatigue','renergy','rstress','rsoreness'],a=ids.map(id=>$('#'+id).value);if(a.some(x=>x===''||!Number.isFinite(+x)))return alert('Completa los seis valores.');if(a.slice(1).some(x=>+x<1||+x>10))return alert('Las escalas deben estar entre 1 y 10.');add('Recuperación',`Sueño ${a[0]} h · Calidad ${a[1]}/10 · Cansancio ${a[2]}/10 · Energía ${a[3]}/10 · Estrés ${a[4]}/10 · Agujetas ${a[5]}/10 · ${$('#rnotes').value}`)};
+ }
+ if(tab==='nutrition'){
+ v.innerHTML=header('Nutrición y medidas','Composición corporal')+`<section class="card"><h2>Registro nutricional</h2><div class="two">${field('Peso (kg)','nweight','number','','Ej. 72.5')}${field('Calorías (kcal)','ncal','number','','Ej. 2000')}${field('Proteína (g)','nprotein','number','','Ej. 130')}${field('Agua (litros)','nwater','number','','Ej. 2')}</div><button class="btn" id="saveNutrition">Guardar nutrición</button></section><section class="card"><h2>Medidas corporales</h2><div class="two">${field('Cintura (cm)','waist','number','','Ej. 80')}${field('Cadera (cm)','hip','number','','Ej. 100')}${field('Muslo (cm)','thigh','number','','Ej. 55')}${field('Brazo (cm)','arm','number','','Ej. 29')}</div><button class="btn" id="saveMeasures">Guardar medidas</button></section><section class="card"><h2>Últimos registros</h2>${entries(logs().filter(x=>x.type==='Nutrición'||x.type==='Medidas'))}</section>`;
+ $('#saveNutrition').onclick=()=>{let a=['nweight','ncal','nprotein','nwater'].map(id=>$('#'+id).value);if(a.some(x=>x===''))return alert('Completa los cuatro campos.');add('Nutrición',`${a[0]} kg · ${a[1]} kcal · ${a[2]} g proteína · ${a[3]} L agua`)};
+ $('#saveMeasures').onclick=()=>{let a=['waist','hip','thigh','arm'].map(id=>$('#'+id).value);if(a.every(x=>x===''))return alert('Introduce al menos una medida.');add('Medidas',`Cintura ${a[0]||'—'} cm · Cadera ${a[1]||'—'} cm · Muslo ${a[2]||'—'} cm · Brazo ${a[3]||'—'} cm`)};
+ }
+ if(tab==='plans'){plannerRender(v);return}
+  if(tab==='history'){
+ let all=logs().slice().reverse(),weights=logs().filter(x=>x.type==='Nutrición').map(x=>({date:x.date,weight:parseFloat(x.details)})).filter(x=>Number.isFinite(x.weight));
+ v.innerHTML=header('Historial','Evolución y gestión de datos')+`<section class="card"><h2>Evolución del peso</h2>${weightChart(weights)}<p class="muted small">Se representa cada peso registrado. Para una tendencia útil, registra el peso en condiciones similares.</p></section><section class="card"><h2>Registros guardados</h2><div class="row"><span class="muted small">${logs().length} registros de ${esc(who())}</span><button class="btn secondary" style="width:auto;margin:0;padding:7px 10px" id="export">Exportar copia</button></div><label class="btn secondary filebtn">Importar copia JSON<input id="import" type="file" accept="application/json"></label><p class="muted small">La importación añade registros al perfil seleccionado.</p></section><section class="card"><h2>Todos los registros</h2>${all.length?all.map(x=>`<div class="entry"><div class="row"><strong>${esc(x.type)}</strong><span class="muted small">${fmt(x.date)}</span></div><p>${esc(x.details)}</p><button class="muted small del" data-id="${x.id}" style="background:none;border:0;padding:5px 0">Eliminar registro</button></div>`).join(''):'<div class="empty">Tu historial aparecerá aquí cuando guardes datos.</div>'}</section><section class="card"><h2>Privacidad y almacenamiento</h2><p class="muted small">Tus registros se guardan en Supabase y solo los usuarios autorizados para este perfil pueden acceder a ellos.</p><button class="btn danger" id="clear">Borrar todos los datos de este perfil</button></section>`;
+ $('#export').onclick=()=>{let blob=new Blob([JSON.stringify({profile:who(),records:logs(),exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fittrack-${who().toLowerCase()}-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
+ $('#import').onchange=async e=>{try{let j=JSON.parse(await e.target.files[0].text());if(!Array.isArray(j.records))throw Error();let rows=j.records.map(x=>({profile_id:activeProfile.id,recorded_on:x.date||today(),record_type:String(x.type||'Importado'),details:String(x.details||'')}));let {error}=await db.from('activity_logs').insert(rows);if(error)throw error;await loadLogs();alert('Copia importada.')}catch(err){alert('No se ha podido importar: '+(err.message||'archivo no válido'));}};
+ document.querySelectorAll('.del').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar este registro?'))return;let {error}=await db.from('activity_logs').delete().eq('id',b.dataset.id).eq('profile_id',activeProfile.id);if(error)return alert('Error al eliminar: '+error.message);data[who()]=logs().filter(x=>String(x.id)!==b.dataset.id);render()});
+ $('#clear').onclick=async()=>{if(!confirm('¿Seguro que quieres borrar todos los datos de '+who()+'? Esta acción no se puede deshacer.'))return;let {error}=await db.from('activity_logs').delete().eq('profile_id',activeProfile.id);if(error)return alert('Error: '+error.message);data[who()]=[];render()};
+ }
+}
+async function startApp(){
+ const {data:{session},error}=await db.auth.getSession();if(error)throw error;
+ if(!session){$('#auth').classList.remove('hidden');$('#app').hidden=true;$('#navwrap').hidden=true;return}
+ user=session.user;await loadProfiles();restoreWorkout();$('#auth').classList.add('hidden');$('#app').hidden=false;$('#navwrap').hidden=false;await loadLogs();
+  if(tab==='plans')await plannerLoad();
+}
+$('#login').onclick=async()=>{let email=$('#email').value.trim(),password=$('#password').value;$('#authError').textContent='';if(!email||!password){$('#authError').textContent='Introduce tu correo y contraseña.';return}$('#login').disabled=true;$('#login').textContent='Entrando…';let {error}=await db.auth.signInWithPassword({email,password});$('#login').disabled=false;$('#login').textContent='Entrar';if(error){$('#authError').textContent='No se ha podido iniciar sesión: '+error.message;return}try{await startApp()}catch(e){$('#authError').textContent='Error al cargar FITTRACK: '+e.message}}
+$('#logout').onclick=async()=>{await db.auth.signOut();location.reload()};
+applyTheme(document.documentElement.dataset.theme||'dark');$('#themeToggle').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+$('#profile').onchange=async()=>{activeProfile=profiles.find(x=>x.id===$('#profile').value);try{await loadLogs();if(tab==='plans')await plannerLoad();render()}catch(e){alert('No se han podido cargar los datos: '+e.message)}};
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',async()=>{tab=b.dataset.tab;if(tab==='plans'){try{await plannerLoad()}catch(e){alert('No se ha podido cargar el planificador: '+e.message)}}render()}));
+db.auth.onAuthStateChange((_event,session)=>{if(!session){$('#auth').classList.remove('hidden');$('#app').hidden=true;$('#navwrap').hidden=true}});
+(async()=>{try{await startApp()}catch(e){$('#auth').classList.remove('hidden');$('#authError').textContent='Error de conexión/configuración: '+e.message}})();
+if('serviceWorker'in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body></html>
