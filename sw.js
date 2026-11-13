@@ -1,5 +1,5 @@
 
-const CACHE = 'fittrack-pro-3-blue-v1';
+const CACHE = 'fittrack-pro-3-blue-v2';
 
 const FILES = [
   './FITTRACK-PRO-3.0-BLUE.html',
