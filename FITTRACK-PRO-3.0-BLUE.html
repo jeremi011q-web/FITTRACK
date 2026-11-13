@@ -117,9 +117,9 @@ input[type=range]{accent-color:var(--accent)}
 /* Nutrition + football performance modules */
 .food-result{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .food-result:last-child{border-bottom:0}.food-result .food-main{flex:1;min-width:0}.food-result small{display:block;color:var(--muted);font-size:11px}.food-result button{width:auto;margin:0;padding:8px 10px;white-space:nowrap}
-.macro-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.macro-box{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px 7px;text-align:center}.macro-box strong{display:block;font-size:17px}.macro-box small{font-size:10px;color:var(--muted)}
-.food-entry{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}.food-entry:last-child{border:0}.food-entry p{margin:3px 0 0;color:var(--muted);font-size:11px}.food-entry button{width:auto;margin:0;padding:5px 9px}
-@media(max-width:390px){.macro-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.macro-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.macro-box{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:10px 7px;text-align:center}.macro-box strong{display:block;font-size:17px}.macro-box small{font-size:10px;color:var(--muted)}
+.food-entry{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}.food-entry:last-child{border:0}.food-entry p{margin:3px 0 0;color:var(--muted);font-size:11px}.food-entry button{width:auto;margin:0;padding:5px 9px}.saved-food{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.saved-food:last-child{border:0}.saved-food button{width:auto;margin:0;padding:7px 10px;white-space:nowrap}
+@media(max-width:430px){.macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 </style>
 </head>
@@ -337,28 +337,46 @@ function plannerRender(v){
 }
 
 
-let nutritionEntries=[],footballEntries=[],nutritionSearchResults=[];
+let nutritionEntries=[],nutritionSavedFoods=[],footballEntries=[],nutritionSearchResults=[];
 let nutritionDate=today(),nutritionMeal='lunch';
 const nfmt=n=>Number(n||0).toLocaleString('es-ES',{maximumFractionDigits:1});
 function nutrientTotals(rows){return rows.reduce((a,x)=>{const q=Number(x.quantity_g||0)/100;a.kcal+=Number(x.kcal_per_100g||0)*q;a.protein+=Number(x.protein_per_100g||0)*q;a.carbs+=Number(x.carbs_per_100g||0)*q;a.fat+=Number(x.fat_per_100g||0)*q;a.fibre+=Number(x.fibre_per_100g||0)*q;return a},{kcal:0,protein:0,carbs:0,fat:0,fibre:0})}
 async function nutritionLoad(){
- const {data,error}=await db.from('nutrition_food_entries').select('*').eq('profile_id',activeProfile.id).eq('eaten_on',nutritionDate).order('created_at',{ascending:true});
- if(error){$('#view').insertAdjacentHTML('afterbegin',`<div class="notice">No se ha podido cargar el registro de alimentos. Ejecuta primero el SQL de configuración. Detalle: ${esc(error.message)}</div>`);return}
- nutritionEntries=data||[];nutritionRender($('#view'));
+ const [dayRes,historyRes]=await Promise.all([
+  db.from('nutrition_food_entries').select('*').eq('profile_id',activeProfile.id).eq('eaten_on',nutritionDate).order('created_at',{ascending:true}),
+  db.from('nutrition_food_entries').select('food_name,quantity_g,kcal_per_100g,protein_per_100g,carbs_per_100g,fat_per_100g,fibre_per_100g,source,created_at').eq('profile_id',activeProfile.id).order('created_at',{ascending:false}).limit(300)
+ ]);
+ if(dayRes.error){$('#view').insertAdjacentHTML('afterbegin',`<div class="notice">No se ha podido cargar el registro de alimentos. Detalle: ${esc(dayRes.error.message)}</div>`);return}
+ if(historyRes.error){$('#view').insertAdjacentHTML('afterbegin',`<div class="notice">No se pudo cargar la biblioteca de alimentos: ${esc(historyRes.error.message)}</div>`);return}
+ nutritionEntries=dayRes.data||[];
+ const seen=new Set();
+ nutritionSavedFoods=(historyRes.data||[]).filter(x=>{const key=String(x.food_name||'').trim().toLocaleLowerCase();if(!key||seen.has(key))return false;seen.add(key);return true});
+ nutritionRender($('#view'));
 }
 function foodRow(x){return `<div class="food-entry"><div><strong>${esc(x.food_name)}</strong><p>${nfmt(x.quantity_g)} g · ${nfmt(Number(x.kcal_per_100g)*Number(x.quantity_g)/100)} kcal · P ${nfmt(Number(x.protein_per_100g)*Number(x.quantity_g)/100)} g · HC ${nfmt(Number(x.carbs_per_100g)*Number(x.quantity_g)/100)} g · G ${nfmt(Number(x.fat_per_100g)*Number(x.quantity_g)/100)} g</p><p>${esc(x.meal_type)}</p></div><button class="btn danger mini-btn removeFood" data-id="${x.id}">×</button></div>`}
 function nutritionRender(v){
  const t=nutrientTotals(nutritionEntries),groups=['breakfast','lunch','snack','dinner'],names={breakfast:'Desayuno',lunch:'Comida',snack:'Merienda',dinner:'Cena'};
  v.innerHTML=header('Nutrición','Registro de alimentos y composición corporal')+
- `<section class="card"><div class="row"><h2>Diario de alimentación</h2><span class="pill">${fmt(nutritionDate)}</span></div><div class="field"><label for="foodDate">Fecha</label><input id="foodDate" type="date" value="${nutritionDate}"></div><div class="macro-grid"><div class="macro-box"><strong>${nfmt(t.kcal)}</strong><small>kcal</small></div><div class="macro-box"><strong>${nfmt(t.protein)} g</strong><small>Proteína</small></div><div class="macro-box"><strong>${nfmt(t.carbs)} g</strong><small>Carbohidratos</small></div><div class="macro-box"><strong>${nfmt(t.fat)} g</strong><small>Grasas</small></div></div><p class="muted small">Fibra total: ${nfmt(t.fibre)} g · Los totales se calculan con el peso consumido y los valores por 100 g.</p></section>
+ `<section class="card"><div class="row"><h2>Diario de alimentación</h2><span class="pill">${fmt(nutritionDate)}</span></div><div class="field"><label for="foodDate">Fecha</label><input id="foodDate" type="date" value="${nutritionDate}"></div><div class="macro-grid"><div class="macro-box"><strong>${nfmt(t.kcal)}</strong><small>kcal</small></div><div class="macro-box"><strong>${nfmt(t.protein)} g</strong><small>Proteína</small></div><div class="macro-box"><strong>${nfmt(t.carbs)} g</strong><small>Carbohidratos</small></div><div class="macro-box"><strong>${nfmt(t.fat)} g</strong><small>Grasas</small></div><div class="macro-box"><strong>${nfmt(t.fibre)} g</strong><small>Fibra</small></div></div><p class="muted small">Totales acumulados de todas las comidas de la fecha seleccionada.</p></section>
  <section class="card"><h2>Añadir alimento</h2><div class="field"><label for="foodSearch">Buscar alimento o producto</label><input id="foodSearch" type="search" placeholder="Ej. chicken breast, banana, Lidl yoghurt"></div><button class="btn secondary" id="searchFoods">Buscar en Open Food Facts</button><div id="foodSearchResults"></div><div class="notice" style="margin-top:12px">Los datos de productos proceden de Open Food Facts y pueden estar incompletos. Comprueba la etiqueta y utiliza la entrada manual si faltan valores.</div></section>
+ <section class="card"><div class="row"><h2>Alimentos guardados</h2><span class="pill">${nutritionSavedFoods.length}</span></div><p class="muted small">Los alimentos que añades quedan guardados automáticamente. Puedes reutilizarlos y cambiar la cantidad.</p>${nutritionSavedFoods.length?nutritionSavedFoods.map((x,i)=>`<div class="saved-food"><div style="min-width:0"><strong>${esc(x.food_name)}</strong><p class="muted small">${nfmt(x.kcal_per_100g)} kcal · P ${nfmt(x.protein_per_100g)} g · HC ${nfmt(x.carbs_per_100g)} g · G ${nfmt(x.fat_per_100g)} g · Fibra ${nfmt(x.fibre_per_100g)} g / 100 g</p></div><button class="btn secondary reuseFood" data-index="${i}">Añadir</button></div>`).join(''):'<div class="empty">Todavía no hay alimentos guardados. Aparecerán aquí al registrar alimentos.</div>'}</section>
  <section class="card"><h2>Entrada manual</h2><div class="field"><label for="manualFoodName">Nombre del alimento</label><input id="manualFoodName" placeholder="Ej. Pechuga de pollo cocinada"></div><div class="two"><div class="field"><label for="manualMeal">Comida</label><select id="manualMeal">${groups.map(g=>`<option value="${g}" ${g===nutritionMeal?'selected':''}>${names[g]}</option>`).join('')}</select></div><div class="field"><label for="manualQty">Cantidad consumida (g)</label><input id="manualQty" type="number" min="0.1" step="0.1" placeholder="150"></div></div><div class="two">${[['manualKcal','Kcal / 100 g'],['manualProtein','Proteína / 100 g'],['manualCarbs','Carbohidratos / 100 g'],['manualFat','Grasas / 100 g'],['manualFibre','Fibra / 100 g']].map(([id,label])=>`<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" min="0" step="0.1" placeholder="0"></div>`).join('')}</div><button class="btn" id="saveManualFood">Añadir alimento al diario</button></section>
  ${groups.map(g=>`<section class="card"><div class="row"><h2>${names[g]}</h2><span class="muted small">${nutritionEntries.filter(x=>x.meal_type===g).length} alimentos</span></div>${nutritionEntries.filter(x=>x.meal_type===g).length?nutritionEntries.filter(x=>x.meal_type===g).map(foodRow).join(''):'<div class="empty">Todavía no hay alimentos.</div>'}</section>`).join('')}
  <section class="card"><h2>Composición corporal</h2><div class="two">${field('Peso (kg)','nweight','number','','Ej. 90')}${field('Agua (litros)','nwater','number','','Ej. 2.5')}</div><button class="btn secondary" id="saveNutrition">Guardar peso y agua</button><h2 style="margin-top:18px">Medidas corporales</h2><div class="two">${field('Cintura (cm)','waist','number','','Ej. 84')}${field('Cadera (cm)','hip','number','','Ej. 100')}${field('Muslo (cm)','thigh','number','','Ej. 55')}${field('Brazo (cm)','arm','number','','Ej. 31')}</div><button class="btn secondary" id="saveMeasures">Guardar medidas</button></section>`;
  $('#foodDate').onchange=async()=>{nutritionDate=$('#foodDate').value||today();await nutritionLoad()};
  $('#manualMeal').onchange=()=>{nutritionMeal=$('#manualMeal').value};$('#searchFoods').onclick=searchOpenFoodFacts;
  $('#saveManualFood').onclick=()=>saveFood({food_name:$('#manualFoodName').value.trim(),meal_type:$('#manualMeal').value,quantity_g:$('#manualQty').value,kcal_per_100g:$('#manualKcal').value,protein_per_100g:$('#manualProtein').value,carbs_per_100g:$('#manualCarbs').value,fat_per_100g:$('#manualFat').value,fibre_per_100g:$('#manualFibre').value,source:'manual'});
- v.querySelectorAll('.removeFood').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar este alimento del diario?'))return;const {error}=await db.from('nutrition_food_entries').delete().eq('id',b.dataset.id).eq('profile_id',activeProfile.id);if(error)return alert(error.message);await nutritionLoad()});
+ v.querySelectorAll('.reuseFood').forEach(b=>b.onclick=async()=>{
+ const food=nutritionSavedFoods[Number(b.dataset.index)];if(!food)return;
+ const quantity=prompt(`Cantidad de ${food.food_name} en gramos:`,String(food.quantity_g||100));
+ if(quantity===null)return;
+ if(!Number.isFinite(Number(quantity))||Number(quantity)<=0)return alert('Introduce una cantidad válida.');
+ const meal=prompt('Comida: breakfast, lunch, snack o dinner',nutritionMeal);
+ if(meal===null)return;
+ const chosenMeal=['breakfast','lunch','snack','dinner'].includes(meal.trim().toLowerCase())?meal.trim().toLowerCase():nutritionMeal;
+ await saveFood({...food,meal_type:chosenMeal,quantity_g:quantity,source:food.source||'saved'});
+});
+v.querySelectorAll('.removeFood').forEach(b=>b.onclick=async()=>{if(!confirm('¿Eliminar este alimento del diario?'))return;const {error}=await db.from('nutrition_food_entries').delete().eq('id',b.dataset.id).eq('profile_id',activeProfile.id);if(error)return alert(error.message);await nutritionLoad()});
  $('#saveNutrition').onclick=()=>{let w=$('#nweight').value,a=$('#nwater').value;if(!w&&!a)return alert('Introduce peso o agua.');add('Nutrición',`${w?w+' kg':'Peso —'} · ${a?a+' L agua':'Agua —'}`,nutritionDate)};
  $('#saveMeasures').onclick=()=>{let a=['waist','hip','thigh','arm'].map(id=>$('#'+id).value);if(a.every(x=>!x))return alert('Introduce al menos una medida.');add('Medidas',`Cintura ${a[0]||'—'} cm · Cadera ${a[1]||'—'} cm · Muslo ${a[2]||'—'} cm · Brazo ${a[3]||'—'} cm`,nutritionDate)};
 }
